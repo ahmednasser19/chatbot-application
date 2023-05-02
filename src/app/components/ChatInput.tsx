@@ -20,7 +20,7 @@ const ChatInput: FunctionComponent<ChatInputProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: "Hello" }),
+        body: JSON.stringify({ messages: "Hello" }),
       });
 
       return response.body;
