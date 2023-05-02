@@ -1,10 +1,17 @@
 "use client";
 
+import { MessageContext } from "@/context/messages";
 import { cn } from "@/lib/utils";
 import { Message } from "@/lib/validators/message";
 import { useMutation } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
-import { FunctionComponent, HTMLAttributes, useState } from "react";
+import {
+  FunctionComponent,
+  HTMLAttributes,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import TextareaAutosize from "react-textarea-autosize";
 interface ChatInputProps extends HTMLAttributes<HTMLDivElement> {}
 const ChatInput: FunctionComponent<ChatInputProps> = ({
@@ -12,6 +19,16 @@ const ChatInput: FunctionComponent<ChatInputProps> = ({
   ...props
 }) => {
   const [input, setInput] = useState<string>("");
+  const {
+    messages,
+    addMessage,
+    removeMessage,
+    updateMessage,
+    isMessageUpdating,
+    setIsMessageUpdating,
+  } = useContext(MessageContext);
+
+  const textAreaRef = useRef<null | HTMLTextAreaElement>(null);
 
   const { mutate: sendMessage, isLoading } = useMutation({
     mutationFn: async (message: Message) => {
@@ -26,8 +43,21 @@ const ChatInput: FunctionComponent<ChatInputProps> = ({
       return response.body;
     },
 
+    onMutate(message) {
+      addMessage(message);
+    },
     onSuccess: async (stream) => {
       if (!stream) throw new Error("No stream found");
+
+      const id = nanoid();
+      const responseMessage: Message = {
+        id,
+        isUserMessage: false,
+        text: "",
+      };
+
+      addMessage(responseMessage);
+      setIsMessageUpdating(true);
 
       const reader = stream.getReader();
       const decoder = new TextDecoder();
@@ -39,14 +69,24 @@ const ChatInput: FunctionComponent<ChatInputProps> = ({
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunkValue = decoder.decode(value);
+        updateMessage(id, (prev) => prev + chunkValue);
         console.log("chunkValue", chunkValue);
       }
+
+      //clean up
+
+      setIsMessageUpdating(false);
+      setInput("");
+      setTimeout(() => {
+        textAreaRef.current?.focus();
+      }, 10);
     },
   });
   return (
     <div {...props} className={cn("border-t border-zinc-300", className)}>
       <div className="relative mt-4 flex-1 overflow-hidden rounded-lg border-none outline-none">
         <TextareaAutosize
+          ref={textAreaRef}
           rows={2}
           maxRows={4}
           autoFocus

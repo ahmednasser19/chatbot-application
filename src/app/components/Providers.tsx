@@ -1,5 +1,6 @@
 "use client";
 
+import { MessagesProvider } from "@/context/messages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FunctionComponent } from "react";
 
@@ -10,7 +11,9 @@ interface ProvidersProps {
 const Providers: FunctionComponent<ProvidersProps> = ({ children }) => {
   const queryClient = new QueryClient();
   return (
-    <QueryClientProvider client={queryClient}> {children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MessagesProvider>{children}</MessagesProvider>
+    </QueryClientProvider>
   );
 };
 
